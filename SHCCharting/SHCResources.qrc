@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="basic">
+    <file>remove_correction.png</file>
+    <file>add_obj.png</file>
+  </qresource>
+  <qresource prefix="datasets">
+    <file>chameleon.csv</file>
+    <file>hfa1.csv</file>
+    <file>hfa2.csv</file>
+    <file>hfa3.csv</file>
+    <file>MopsiLocations2012-Joensuu.txt</file>
+    <file>Spiral.txt</file>
+    <file>Aggregation.txt</file>
+  </qresource>
+</RCC>
