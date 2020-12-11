@@ -4,4 +4,6 @@ Release
 moc_*
 qrc_*
 ui_*
-
+*.o
+*.qrc
+.qmake*
