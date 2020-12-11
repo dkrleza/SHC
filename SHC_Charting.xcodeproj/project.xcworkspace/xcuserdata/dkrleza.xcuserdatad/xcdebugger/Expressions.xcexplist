@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "SHC_Component::chooseUniOrMulti():SHC_Component.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "cout &lt;&lt; *temp &lt;&lt; endl;">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "main:main.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "(Eigen::MatrixXd *)((Eigen::MatrixXd *)0x60000020f4a0)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "SHC_Component::mahalanobisDistance(Eigen::Matrix&lt;double, -1, 1, 0, -1, 1&gt;*):SHC_Component.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "*icov">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>
