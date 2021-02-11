@@ -93,6 +93,7 @@ bool SHC_Component::addNewElement(VectorXd *newElement,SHC *parent_resolver,vect
     if(decay_handler) decay_handler->reset(elements*decay_pace<cbNLimit*decay_pace ? decay_pace*cbNLimit : decay_pace*elements);
     if(blocked) return false;
     // calculate new mean
+    parent_resolver->incDeltaElementsInDeltaLog(this);
     VectorXd *old_mean=mean;
     VectorXd t1=(*newElement-*old_mean)/(elements+1);
     mean=new VectorXd(*old_mean+t1);
@@ -212,9 +213,21 @@ VectorXd *SHC_Component::getMean() {
     return mean;
 }
 
+void SHC_Component::setMean(VectorXd *new_mean) {
+    delete mean;
+    mean=new_mean;
+}
+
 MatrixXd *SHC_Component::getCovariance() {
     if(!inverted) return new MatrixXd(*cov);
     else return new MatrixXd(cov->inverse());
+}
+
+void SHC_Component::setCovariance(MatrixXd *new_cov,bool new_inverted) {
+    delete cov;
+    if(new_inverted) cov=new MatrixXd(new_cov->inverse());
+    else cov=new MatrixXd(*new_cov);
+    inverted=new_inverted;
 }
 
 bool SHC_Component::isCovarianceInverted() {
@@ -231,6 +244,10 @@ bool SHC_Component::isObsolete() {
 
 bool SHC_Component::isBlocked() {
     return blocked;
+}
+
+void SHC_Component::setBlocked(bool blocked) {
+    this->blocked=blocked;
 }
 
 long SHC_Component::getElements() {
@@ -338,6 +355,7 @@ SHC_Component::SHC_Component(SHC_Containable_Set *set,VectorXd *mean,MatrixXd *c
 SHC_Component::SHC_Component(SHC_Containable_Set *set,SHC_Component *cloneFrom) : SHC_Containable(set) {
     if(set!=NULL) set->addComponent(this);
     if(cloneFrom==NULL) throw SHC_Component_Exception("Cloning component from undefined component");
+    this->source_node=cloneFrom->source_node;
     this->dim=cloneFrom->dim;
     this->cov=new MatrixXd(*cloneFrom->cov);
     if(cloneFrom->inverted) this->inverted=true;
@@ -463,11 +481,13 @@ void SHC_Component::redirectComponent(SHC_Component *to_c) {
         redirect_to=NULL;
         return;
     }
+    if(this->redirect_to && this->redirect_to==to_c) return;
     SHC_Component *rto=to_c;
     while(rto!=NULL) {
         if(rto==this) return;
         rto=rto->getRedirectedComponent();
     }
+    if(this->redirect_to) cleanRedirection();
     this->redirect_to=to_c;
     to_c->addFromRedirectedComponent(this);
 }
@@ -631,4 +651,16 @@ void SHC_Component::agglomerateNeighborhood(SHC *parent) {
         removeNeighbor(neighbor);
     }
     delete an;
+}
+
+set<SHC_Component*> *SHC_Component::getNeighborhood() {
+    return &neighborhood;
+}
+
+void SHC_Component::setSourceNode(string new_source_node) {
+    this->source_node=new_source_node;
+}
+
+string SHC_Component::getSourceNode() {
+    return this->source_node;
 }

@@ -130,12 +130,12 @@ VectorXd *SHC::getVirtualVariance() {
 }
 
 _int_cr SHC::classify_p1(bool classifyOnly,vector<pair<SHC_Component*,double>> *obsolete_map,vector<pair<SHC_Component*,double>> *classified_map,
-                         vector<pair<SHC_Component*,double>> *neighborhood_map,vector<thread *> *workers) {
-    if(parallelize && workers!=NULL)
+                         vector<pair<SHC_Component*,double>> *neighborhood_map/*,vector<thread *> *workers*/) {
+    /*if(parallelize && workers!=NULL)
         for(thread *t:*workers)
             t->join();
     for(thread *t:*workers) delete t;
-    delete workers;
+    delete workers;*/
     sort(classified_map->begin(),classified_map->end(),[=](pair<SHC_Component*,double>& a,pair<SHC_Component*,double>& b) {
         return a.second<b.second;
     });
@@ -191,16 +191,17 @@ _int_cr SHC::classify(Eigen::VectorXd *newElement, bool classifyOnly, set<SHC_Co
     vector<pair<SHC_Component*,double>> *classified_map=new vector<pair<SHC_Component*,double>>(),
                                         *obsolete_map=new vector<pair<SHC_Component*,double>>(),
                                         *neighborhood_map=new vector<pair<SHC_Component*,double>>();
-    vector<thread*> *workers=new vector<thread*>();
+    //vector<thread*> *workers=new vector<thread*>();
     for(unordered_map<string,SHC_Component*>::iterator it=components.begin();it!=components.end();it++) {
         if(excludeComponents==NULL || excludeComponents->find(it->second)==excludeComponents->end()) {
-            if(parallelize) {
+            /*if(parallelize) {
                 thread *t=new thread(&SHC::t1,this,it->second,newElement,classified_map,neighborhood_map,obsolete_map,theta);
                 workers->push_back(t);
-            } else SHC::t1(this,it->second,newElement,classified_map,neighborhood_map,obsolete_map,theta);
+            } else*/
+            SHC::t1(this,it->second,newElement,classified_map,neighborhood_map,obsolete_map,theta);
         }
     }
-    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map,workers);
+    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map/*,workers*/);
 }
 
 _int_cr SHC::classifySigmaIndex(Eigen::VectorXd *newElement, bool classifyOnly, set<SHC_Component*> *excludeComponents, SHC_Component *starting) {
@@ -250,32 +251,34 @@ _int_cr SHC::classify(Eigen::VectorXd *newElement, SHC_Component *parentComponen
     vector<pair<SHC_Component*,double>> *classified_map=new vector<pair<SHC_Component*,double>>(),
                                         *obsolete_map=new vector<pair<SHC_Component*,double>>(),
                                         *neighborhood_map=new vector<pair<SHC_Component*,double>>();
-    vector<thread*> *workers=new vector<thread*>();
+    //vector<thread*> *workers=new vector<thread*>();
     unordered_map<string,SHC_Containable *> ccomps=parentComponent->fetchChildComponents();
     for(unordered_map<string,SHC_Containable *>::iterator it=ccomps.begin();it!=ccomps.end();it++) {
         if(typeid(it->second)==typeid(SHC_Component)) {
             SHC_Component *comp=static_cast<SHC_Component *>(it->second);
-            if(parallelize) {
+            /*if(parallelize) {
                 thread *t=new thread(&SHC::t1,this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
                 workers->push_back(t);
-            } else SHC::t1(this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
+            } else */
+            SHC::t1(this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
         }
     }
-    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map,workers);
+    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map/*,workers*/);
 }
 
 _int_cr SHC::classify(Eigen::VectorXd *newElement, vector<SHC_Component*> *forComponents, bool classifyOnly) {
     vector<pair<SHC_Component*,double>> *classified_map=new vector<pair<SHC_Component*,double>>(),
                                         *obsolete_map=new vector<pair<SHC_Component*,double>>(),
                                         *neighborhood_map=new vector<pair<SHC_Component*,double>>();
-    vector<thread*> *workers=new vector<thread*>();
+    //vector<thread*> *workers=new vector<thread*>();
     for(SHC_Component *comp:*forComponents) {
-        if(parallelize) {
+        /*if(parallelize) {
             thread *t=new thread(&SHC::t1,this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
             workers->push_back(t);
-        } else SHC::t1(this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
+        } else */
+        SHC::t1(this,comp,newElement,classified_map,neighborhood_map,obsolete_map,theta);
     }
-    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map,workers);
+    return classify_p1(classifyOnly,obsolete_map,classified_map,neighborhood_map/*,workers*/);
 }
 
 shared_ptr<ClassificationResult> SHC::process(VectorXd *newElement, bool classifyOnly) {
@@ -367,9 +370,11 @@ shared_ptr<ClassificationResult> SHC::process(VectorXd *newElement, bool classif
             comp=new SHC_Component(containers,newElement,virtualVariance,cbVarianceLimit,cbNLimit,driftCheckingSizeRatio,
                                    driftMovementMDThetaRatio,decay_pace,componentFormingMinVVRatio,componentBlockingLimitVVRatio);
             comp->switchDecay(decay,decay_pace);
+            comp->setSourceNode(deltaLoggingSourceName);
             if(eventCallback) comp->setEventCallback(eventCallback);
             SHC_Containable *cluster=new SHC_Containable(containers, comp);
             components[comp->getId()]=comp;
+            if(delta) delta->addComponentDeltaElements(comp,deltaLoggingSourceName);
             if(sigma_index) {
                 std::chrono::time_point<std::chrono::system_clock> ust=std::chrono::system_clock::now();
                 sigma_index->create(comp);
@@ -398,7 +403,10 @@ shared_ptr<ClassificationResult> SHC::process(VectorXd *newElement, bool classif
     return res;
 }
 
-shared_ptr<vector<shared_ptr<ClassificationResult>>> SHC::process(MatrixXd *elements, bool classifyOnly) {
+tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> SHC::process(MatrixXd *elements, bool initNewDeltaLogger, bool classifyOnly) {
+    if(parallelize) {
+        if(!delta || (delta && initNewDeltaLogger)) delta=new DeltaLogger();
+    }
     qTime=0;uTime=0;
     std::chrono::time_point<std::chrono::system_clock> pst=std::chrono::system_clock::now();
     if(sigma_index) sigma_index->resetStatistics();
@@ -412,16 +420,16 @@ shared_ptr<vector<shared_ptr<ClassificationResult>>> SHC::process(MatrixXd *elem
             res->push_back(cr);
         }
     }
-    //pair<long, long> s=getStatistic();
-    //cout << "...components=" << s.first << " outliers=" << s.second << endl;
-    //if(!classifyOnly) pseudoOffline();
     std::chrono::time_point<std::chrono::system_clock> pet=std::chrono::system_clock::now();
     pTime=std::chrono::duration_cast<std::chrono::microseconds>(pet-pst).count();
-    /*vector<SHC_Component*> *outs=getOutliers();
-    for(SHC_Component *o:*outs)
-        for(shared_ptr<ClassificationResult> res_it:*res)
-            if(o->getId()==*res_it->component_id) res_it->outlier=true;*/
-    return res;
+    shared_ptr<DeltaLogger> delta_res=nullptr;
+    if(delta) {
+        for(pair<string,SHC_Component*> it:components) delta->finalizeComponent(it.second);
+        delta_res=make_shared<DeltaLogger>(*delta);
+        delta=NULL;
+    }
+
+    return make_tuple(res,delta_res);
 }
 
 SHC_Component *SHC::getComponent(string *comp_id) {
@@ -434,8 +442,9 @@ void SHC::agglomerateComponents(SHC_Component *c1,SHC_Component *c2) {
     agglomerate(c1,c2);
 }
 
-pair<bool, bool> SHC::agglomerate(SHC_Component *c1,SHC_Component *c2) {
+pair<bool, bool> SHC::agglomerate(SHC_Component *c1,SHC_Component *c2,bool add_point) {
     bool r1=false,r2=false;
+    SHC_ComponentConnection *cc=NULL;
     if(c1->getParent()!=c2->getParent()) {
         if(c1->isOutlier() && !c1->isObsolete() && !c2->isObsolete()) {
             if(c2->addNewElement(c1->getMean(),this)) {
@@ -452,33 +461,37 @@ pair<bool, bool> SHC::agglomerate(SHC_Component *c1,SHC_Component *c2) {
                 removeComponent(c2);
             }
         } else if(!c1->isOutlier() && !c2->isOutlier()) {
-            SHC_ComponentConnection *cc=connections.connect(c1, c2);
-            if(cc->getPoints()>=(long)this->sha_agglo_theta && c1->getParent()!=c2->getParent()) {
-                unordered_map<string, SHC_Containable*> p1_children=c1->getParent()->fetchChildComponents();
-                long p1_elms=0;
-                for(auto p1it:p1_children)
-                    if(typeid(*p1it.second)==typeid(SHC_Component)) p1_elms+=(dynamic_cast<SHC_Component*>(p1it.second))->getElements();
-                unordered_map<string, SHC_Containable*> p2_children=c2->getParent()->fetchChildComponents();
-                long p2_elms=0;
-                for(auto p2it:p2_children)
-                    if(typeid(*p2it.second)==typeid(SHC_Component)) p2_elms+=(dynamic_cast<SHC_Component*>(p2it.second))->getElements();
-                if(p1_elms>p2_elms) {
-                    c1->getParent()->addTrace(c2->getParent());
-                    for(auto p2it:p2_children) {
-                        p2it.second->detachFromParent();
-                        p2it.second->attachToParent(c1->getParent());
-                    }
-                } else {
-                    c2->getParent()->addTrace(c1->getParent());
-                    for(auto p1it:p1_children) {
-                        p1it.second->detachFromParent();
-                        p1it.second->attachToParent(c2->getParent());
-                    }
-                }
-            }
+            cc=connections.connect(c1, c2, add_point);
+            if(cc->getPoints()>=(long)this->sha_agglo_theta && c1->getParent()!=c2->getParent())
+                joinComponents(c1, c2);
         }
-    } else connections.connect(c1, c2);
+    } else cc=connections.connect(c1, c2, add_point);
+    if(delta && cc) delta->logComponentConnection(cc);
     return make_pair(r1, r2);
+}
+
+void SHC::joinComponents(SHC_Component *c1, SHC_Component *c2) {
+    unordered_map<string, SHC_Containable*> p1_children=c1->getParent()->fetchChildComponents();
+    long p1_elms=0;
+    for(auto p1it:p1_children)
+        if(typeid(*p1it.second)==typeid(SHC_Component)) p1_elms+=(dynamic_cast<SHC_Component*>(p1it.second))->getElements();
+    unordered_map<string, SHC_Containable*> p2_children=c2->getParent()->fetchChildComponents();
+    long p2_elms=0;
+    for(auto p2it:p2_children)
+        if(typeid(*p2it.second)==typeid(SHC_Component)) p2_elms+=(dynamic_cast<SHC_Component*>(p2it.second))->getElements();
+    if(p1_elms>p2_elms) {
+        c1->getParent()->addTrace(c2->getParent());
+        for(auto p2it:p2_children) {
+            p2it.second->detachFromParent();
+            p2it.second->attachToParent(c1->getParent());
+        }
+    } else {
+        c2->getParent()->addTrace(c1->getParent());
+        for(auto p1it:p1_children) {
+            p1it.second->detachFromParent();
+            p1it.second->attachToParent(c2->getParent());
+        }
+    }
 }
 
 void SHC::pseudoOffline(bool force) {
@@ -496,6 +509,7 @@ void SHC::pseudoOffline(bool force) {
                 if(test_comp->isRedirected() && test_comp->getElements()<=0.2*test_comp->getRedirectedComponent()->getElements()) {
                     SHC_Component *super_comp=test_comp->getRedirectedComponent();
                     super_comp->setElements(super_comp->getElements()+test_comp->getElements());
+                    incDeltaElementsInDeltaLog(super_comp,test_comp->getElements());
                     super_comp->addTrace(test_comp);
                     removeComponent(test_comp);
                 } else if(!test_comp->isRedirected()) {
@@ -623,6 +637,7 @@ void SHC::removeComponent(SHC_Component *c) {
     for(pair<long,set<SHC_Component *> *> p_part:*partitions) delete p_part.second;
     delete partitions;
     if(sigma_index) sigma_index->remove(c);
+    if(delta) delta->logComponentRemoval(c);
     components.erase(c->getId());
     delete c;
 }
@@ -1012,6 +1027,235 @@ long SHC::getNodeCounter() {
 
 SigmaIndex<SHC_Component*> *SHC::getSigmaIndex() {
     return sigma_index;
+}
+
+void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_src,shared_ptr<DeltaLogger> amending_log,bool dropCosumationActivity) {
+    if(dropCosumationActivity) {
+        cout << "###################################################" << endl;
+        cout << "## Consuming log " << (delta_log_src ? *delta_log_src : "master") << endl;
+        cout << "###################################################" << endl;
+    }
+    if(amending_log) delta=amending_log.get();
+    else if(!delta_log) delta=new DeltaLogger();
+    else delta=NULL;
+    int total_dropped_points=0;
+    for(string rid:delta_log->cr_delta)
+        if(components.find(rid)!=components.end()) removeComponent(components[rid]);
+    for(pair<string,DL_Component*> it:delta_log->c_delta) {
+        string local_id=it.second->id;
+        bool existing_component=components.find(local_id)!=components.end();
+        set<string> *ts=traceComponentId(&local_id);
+        if(!existing_component && ts->size()>0) {
+            if(delta) delta->cr_delta.insert(local_id);
+            delete ts;
+            continue;
+        }
+        delete ts;
+        if(components.find(local_id)==components.end()) {
+            if(it.second->outlier) {
+                // let us check if this is an outlier on the same place we already have one
+                bool existing_outlier=false;
+                for(pair<string,SHC_Component*> it_out:components) {
+                    if(it_out.second->isOutlier()) {
+                        SHC_Component *out=it_out.second;
+                        double md_out=out->mahalanobisDistance(it.second->end->mean);
+                        if(md_out<(theta/16)) {
+                            existing_outlier=true;
+                            if(delta) delta->cr_delta.insert(it.second->id);
+                            if(dropCosumationActivity) cout << "****** it seems that " << local_id << " exists somehow here: " << out->getId() << endl;
+                            total_dropped_points++;
+                            break;
+                        } else if(md_out<theta) {
+                            out->addNewElement(it.second->end->mean, this);
+                            existing_outlier=true;
+                            if(delta) delta->cr_delta.insert(it.second->id);
+                            if(dropCosumationActivity) cout << "****** we added " << local_id << " to: " << out->getId() << endl;
+                            break;
+                        }
+                    }
+                }
+                if(existing_outlier) continue;
+            }
+            // if the new component is really a new component, let us add it
+            MatrixXd *cov=it.second->end->isInverted ? new MatrixXd(it.second->end->covariance->inverse()) : new MatrixXd(*it.second->end->covariance);
+            long de=0;
+            if(delta_log_src) {
+                if(it.second->delta_elements.find(*delta_log_src)!=it.second->delta_elements.end()) de=it.second->delta_elements[*delta_log_src];
+            } else {
+                for(pair<string,long> itx:it.second->delta_elements)
+                    if(itx.first!=deltaLoggingSourceName) de+=itx.second;
+            }
+            SHC_Component *nc=new SHC_Component(containers,it.second->end->mean,cov,it.second->end->isInverted,de,virtualVariance);
+            nc->setId(it.second->id);
+            nc->addTrace(&it.second->trace);
+            if(delta_log_src) nc->setSourceNode(*delta_log_src);
+            if(SHC_Containable *parent=containers->fetchContainer(&it.second->parent_id)) nc->attachToParent(parent);
+            else {
+                SHC_Containable *cluster=new SHC_Containable(containers, nc);
+                cluster->setId(it.second->parent_id);
+            }
+            delete cov;
+            nc->switchDecay(decay,decay_pace);
+            if(eventCallback) nc->setEventCallback(eventCallback);
+            nc->setObsolete(it.second->obsolete);
+            nc->setBlocked(it.second->blocked);
+            nc->setBaselineLimits(cbVarianceLimit,cbNLimit);
+            components[nc->getId()]=nc;
+            if(delta) {
+                if(delta_log_src) {
+                    delta->logComponent(nc,*delta_log_src,de);
+                } else {
+                    for(pair<string,long> itx:it.second->delta_elements)
+                        if(itx.first!=deltaLoggingSourceName)
+                            delta->logComponent(nc,itx.first,itx.second);
+                }
+            }
+        } else {
+            SHC_Component *c=components[local_id];
+            if(c->getParent()->getId()!=it.second->parent_id) {
+                c->detachFromParent();
+                if(SHC_Containable *parent=containers->fetchContainer(&it.second->parent_id)) c->attachToParent(parent);
+                else {
+                    SHC_Containable *cluster=new SHC_Containable(containers, c);
+                    cluster->setId(it.second->parent_id);
+                }
+            }
+            if(c->isOutlier() && it.second->outlier) continue;
+            long ce=c->getElements(),cd=it.second->end->elements;
+            if(delta_log_src) {
+                double ce_coeff=((double)ce/((double)ce+(double)cd));
+                VectorXd mean_delta=((*it.second->end->mean)-(*c->getMean()))*ce_coeff;
+                mean_delta+=*c->getMean();
+                c->setMean(new VectorXd(mean_delta));
+                MatrixXd *cov=c->getCovariance();
+                for(int i=0;i<cov->rows();i++) {
+                    for(int j=0;j<cov->cols();j++) {
+                       if(abs((*cov)(i,j))<abs((*it.second->end->covariance)(i,j)))
+                            (*cov)(i,j)=(*it.second->end->covariance)(i,j);
+                    }
+                }
+                c->setCovariance(cov,c->isCovarianceInverted());
+                delete cov;
+            } else {
+                c->setMean(new VectorXd(*it.second->end->mean));
+                c->setCovariance(it.second->end->covariance,it.second->end->isInverted);
+            }
+            
+            c->setObsolete(it.second->obsolete);
+            c->setBlocked(it.second->blocked);
+            c->setBaselineLimits(cbVarianceLimit,cbNLimit);
+            c->addTrace(&it.second->trace);
+            if(delta_log_src) {
+                long de=0;
+                if(it.second->delta_elements.find(*delta_log_src)!=it.second->delta_elements.end()) de=it.second->delta_elements[*delta_log_src];
+                SHC_Component *temp=c;
+                while(temp->isRedirected()) temp=temp->getRedirectedComponent();
+                temp->setElements(ce+de);
+                if(delta) delta->logComponent(temp,*delta_log_src,de);
+            } else {
+                c->setElements(it.second->end->elements);
+            }
+        }
+    }
+    
+    //for (SHC_Component *c:touched_components) {
+    for (pair<string,SHC_Component*> it:components) {
+        SHC_Component *c=it.second;
+        if(delta_log->c_delta.find(c->getId())!=delta_log->c_delta.end()) {
+            DL_Component *dl_c=delta_log->c_delta[c->getId()];
+            if(dl_c->redirectedTo) {
+                string r_to_id=*dl_c->redirectedTo;
+                if(components.find(r_to_id)!=components.end()) {
+                    SHC_Component *r_c=components[r_to_id];
+                    if(!c->isRedirected() || c->getRedirectedComponent()!=r_c) {
+                        c->redirectComponent(r_c);
+                        if(c->getParent()!=r_c->getParent()) {
+                            if(dropCosumationActivity) cout << "*** join components " << c->getId() << " " << r_c->getId() << endl;
+                            if(delta) {
+                                delta->logComponent(c,deltaLoggingSourceName);
+                                delta->logComponent(r_c,deltaLoggingSourceName);
+                            }
+                            joinComponents(c, r_c);
+                        }
+                    }
+                }
+            }
+            for(string o_n:dl_c->neighborhood) {
+                if(components.find(o_n)!=components.end()) {
+                    SHC_Component *n_o_c=components[o_n];
+                    c->addNeighbor(n_o_c);
+                }
+            }
+        }
+        
+        if(delta_log_src && !c->isOutlier()) {
+            set<SHC_Component*> ex={c};
+            std::chrono::time_point<std::chrono::system_clock> qst=std::chrono::system_clock::now();
+            _int_cr class_res=!sigma_index ? classify(c->getMean(), true, &ex) : classifySigmaIndex(c->getMean(), true, &ex, c);
+            std::chrono::time_point<std::chrono::system_clock> qet=std::chrono::system_clock::now();
+            qTime+=std::chrono::duration_cast<std::chrono::microseconds>(qet-qst).count();
+            for(pair<SHC_Component*,double> it:*class_res.neighborhood_map)
+                if(it.first->isOutlier()) c->addNeighbor(it.first);
+            for(pair<SHC_Component*,double> it:*class_res.classified_map) {
+                if(!it.first->isOutlier()) {
+                    if(c->getParent()!=it.first->getParent()) {
+                        if(dropCosumationActivity) cout << "*** join components " << c->getId() << " " << it.first->getId() << endl;
+                        if(delta) {
+                            delta->logComponent(c,deltaLoggingSourceName);
+                            delta->logComponent(it.first,deltaLoggingSourceName);
+                        }
+                        joinComponents(c, it.first);
+                    }
+                } else {
+                    if(dropCosumationActivity) cout << "*** agglomerate " << c->getId() << " " << it.first->getId() << endl;
+                    agglomerate(c, it.first);
+                }
+            }
+            if(!c->isRedirected()) {
+                bool redirected=false;
+                for(pair<SHC_Component*,double> it:*class_res.classified_map) {
+                    if(!it.first->isOutlier()) {
+                        if(c->getElements()<=it.first->getElements()) {
+                            if(dropCosumationActivity) cout << "*** redirect " << c->getId() << " to " << it.first->getId() << endl;
+                            c->redirectComponent(it.first);
+                            redirected=true;
+                            break;
+                        }
+                    }
+                }
+            }
+            c->agglomerateNeighborhood(this);
+        }
+    }
+    
+    
+    for(pair<SHC_ComponentConnectionId<string, string>, DL_ComponentConnection*> it:delta_log->cc_delta) {
+        if(components.find(it.second->c1_id)!=components.end() &&
+           components.find(it.second->c2_id)!=components.end()) {
+            SHC_Component *c1=components[it.second->c1_id],*c2=components[it.second->c2_id];
+            SHC_ComponentConnection *cc=connections.connect(c1, c2, false);
+            cc->addPoints(it.second->points);
+            agglomerate(c1, c2, false);
+        }
+    }
+    pseudoOffline(true);
+    if(delta) {
+        for(pair<string,SHC_Component*> it:components) delta->finalizeComponent(it.second);
+        delta=NULL;
+    }
+    if(dropCosumationActivity) cout << "$$$$ Total dropped points " << total_dropped_points << endl;
+}
+
+void SHC::incDeltaElementsInDeltaLog(SHC_Component *comp,int number) {
+    if(delta) delta->addComponentDeltaElements(comp,deltaLoggingSourceName,number);
+}
+
+void SHC::setDeltaLoggingSourceName(string s) {
+    this->deltaLoggingSourceName=s;
+}
+
+string SHC::getDeltaLoggingSourceName() {
+    return this->deltaLoggingSourceName;
 }
 
 /*void SHC::pseudoOffline(bool force) {

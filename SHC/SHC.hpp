@@ -1,7 +1,8 @@
 #ifndef SHC_hpp
 #define SHC_hpp
 
-#include <Eigen/Sparse>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 #include <mutex>
 #include <string>
 #include <set>
@@ -10,6 +11,7 @@
 #include <memory>
 #include "SHC_Component.hpp"
 #include "SHC_ComponentConnection.hpp"
+#include "SHC_DeltaLogger.hpp"
 #include "SigmaIndex.hpp"
 #include <chrono>
 using namespace std;
@@ -78,6 +80,7 @@ struct SHCEvent {
 class SHC {
 private:
     SigmaIndex<SHC_Component*> *sigma_index=NULL;
+    string deltaLoggingSourceName="master";
     bool parallelize=false,performSharedAgglomeration=true,cache=false,decay=true,cloned=false;
     int agglo_count,agglo_counter,decay_pace=10,sha_agglo_theta=1,entry=0;
     long cbNLimit=40,qTime=0,nodeCounter=0,uTime=0,pTime=0;
@@ -93,18 +96,20 @@ private:
     static void t1(SHC *shc, SHC_Component *comp, VectorXd *newElement, vector<pair<SHC_Component*,double>> *classified_map, vector<pair<SHC_Component*,double>> *neighborhood_map,
                    vector<pair<SHC_Component*,double>> *obsolete_map, double theta=3.0);
     //static void t2(SHC *shc, SHC_Component *comp_from, SHC_Component *comp_to, vector<pair<string*,double*>> *res_map);
-    pair<bool, bool> agglomerate(SHC_Component *c1,SHC_Component *c2);
+    pair<bool, bool> agglomerate(SHC_Component *c1,SHC_Component *c2,bool add_point=true);
+    void joinComponents(SHC_Component *c1,SHC_Component *c2);
     void purgeEmptyContainers();
     pair<set<string>*,set<string> *> getOutliersAndComponents();
     set<SHC_Component *> *getUnrelatedComponents(SHC_Component *comp);
     _int_cr classify_p1(bool classifyOnly,vector<pair<SHC_Component*,double>> *obsolete_map,vector<pair<SHC_Component*, double>> *classified_map,
-                        vector<pair<SHC_Component*,double>> *neighborhood_map,vector<thread*> *workers);
+                        vector<pair<SHC_Component*,double>> *neighborhood_map/*,vector<thread*> *workers*/);
     _int_cr classify(VectorXd *newElement, bool classifyOnly=false, set<SHC_Component *> *excludeComponents=NULL);
     _int_cr classifySigmaIndex(VectorXd *newElement, bool classifyOnly=false, set<SHC_Component*> *excludeComponents=NULL, SHC_Component *starting=NULL);
     _int_cr classify(VectorXd *newElement, SHC_Component *parentComponent, bool classifyOnly=false);
     _int_cr classify(VectorXd *newElement, vector<SHC_Component*> *forComponents, bool classifyOnly=false);
     function<void (SHCEvent*)> eventCallback;
     set<string> decayedOutliers;
+    DeltaLogger *delta=NULL;
 protected:
     mutex m1;
 public:
@@ -117,7 +122,7 @@ public:
     SHC(SHC *cloneFrom);
     ~SHC();
     shared_ptr<ClassificationResult> process(VectorXd *newElement, bool classifyOnly=false);
-    shared_ptr<vector<shared_ptr<ClassificationResult>>> process(MatrixXd *elements, bool classifyOnly=false);
+    tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> process(MatrixXd *elements, bool initNewDeltaLogger=false, bool classifyOnly=false);
     SHC_Component *getComponent(string *comp_id);
     set<string> *getTopContainers(bool clusters=true, bool outliers=true);
     vector<SHC_Component_Details *> *getClassificationDetails(string *container_id,double theta,int dim1,int dim2,bool single=false);
@@ -156,6 +161,11 @@ public:
     vector<double> getTimes();
     long getNodeCounter();
     SigmaIndex<SHC_Component*> *getSigmaIndex();
+    void consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_src=NULL,shared_ptr<DeltaLogger> amending_log=nullptr,
+                         bool dropCosumationActivity=false);
+    void incDeltaElementsInDeltaLog(SHC_Component *comp,int number=1);
+    void setDeltaLoggingSourceName(string s);
+    string getDeltaLoggingSourceName();
 };
 
 #endif /* SHC_hpp */

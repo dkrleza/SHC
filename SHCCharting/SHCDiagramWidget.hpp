@@ -15,12 +15,12 @@ private:
     void closeEvent(QCloseEvent *event);
     void adjustButtons();
     void printCurrentPage();
-    void clusterMapping(unordered_map<string, QColor> &cluster_color_mapping, SHC *shc_classifier);
+    void clusterMapping(unordered_map<string, QColor> *cluster_color_mapping, SHC *shc_classifier);
     void mergeSlices(vector<MatrixXd *> *all_slices, vector<MatrixXd *> *slice);
-    void createChart(const unordered_map<string, QColor> &cluster_color_mapping, Ui::gaussTest *params_widget,
-                     const vector<QColor> &series_color_mapping, SHC *shc_classifier, vector<MatrixXd *> *slice,
+    void createChart(unordered_map<string, QColor> *cluster_color_mapping, Ui::gaussTest *params_widget,
+                     vector<QColor> *series_color_mapping, SHC *shc_classifier, vector<MatrixXd *> *slice,
                      const string info, bool drawSI);
-    void createChart(const unordered_map<string, QColor> &cluster_color_mapping, Ui::gaussTest *params_widget,
+    void createChart(unordered_map<string, QColor> *cluster_color_mapping, Ui::gaussTest *params_widget,
                      SHC *shc_classifier, MatrixXd *slice, const string info, bool drawSI, const int current_slice_pos=-1);
 public:
     void extracted(unordered_map<std::string, QColor> &cluster_color_mapping, SHC *shc_classifier);

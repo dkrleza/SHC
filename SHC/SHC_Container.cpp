@@ -178,6 +178,10 @@ void SHC_Containable::addTrace(pair<string, std::set<string>> *prev_pair) {
     trace.insert(prev_pair->first);
 }
 
+void SHC_Containable::addTrace(std::set<string> *prev_log) {
+    trace.insert(prev_log->begin(),prev_log->end());
+}
+
 bool SHC_Containable::checkTrace(string id) {
     return trace.find(id)!=trace.end();
 }

@@ -29,7 +29,7 @@ SHCComponentAreaSeries *SHCGaussDiagramChart::transform(SHC_Component *comp, Mat
     return res;
 }
 
-void SHCGaussDiagramChart::m1(QScatterSeries *bcenters, QScatterSeries *centers, unordered_map<std::string, QColor> &cluster_mapping,
+void SHCGaussDiagramChart::m1(QScatterSeries *bcenters, QScatterSeries *centers, unordered_map<std::string, QColor> *cluster_mapping,
                               Ui::gaussTest *params_widget) {
     set<string> *clusters=processor->getTopContainers();
     if(params_widget->displayCenters->isChecked()) {
@@ -56,7 +56,7 @@ void SHCGaussDiagramChart::m1(QScatterSeries *bcenters, QScatterSeries *centers,
                 else if(!comp_det->covThreshold && comp_det->nThreshold) qas->setBrush(Qt::FDiagPattern);
                 else qas->setBrush(Qt::DiagCrossPattern);
             }
-            qas->setColor(cluster_mapping[clus_id]);
+            qas->setColor((*cluster_mapping)[clus_id]);
             addSeries(qas);
             cluster_series.push_back(qas);
             if(params_widget->displayDriftingFront->isChecked()) {
@@ -138,7 +138,7 @@ void SHCGaussDiagramChart::m2(QtCharts::QScatterSeries *bcenters, QtCharts::QSca
 }
 
 SHCGaussDiagramChart::SHCGaussDiagramChart(SHC *shc, vector<MatrixXd*> *slice, Ui::gaussTest *params_widget,
-                                           unordered_map<string, QColor> cluster_mapping, vector<QColor> series_mapping,
+                                           unordered_map<string, QColor> *cluster_mapping, vector<QColor> *series_mapping,
                                            bool drawSI) {
     processor=make_shared<SHC>(shc);
     QtCharts::QScatterSeries *centers=NULL;
@@ -151,7 +151,7 @@ SHCGaussDiagramChart::SHCGaussDiagramChart(SHC *shc, vector<MatrixXd*> *slice, U
             VectorXd row=_t1->row(row_index);
             ss->append(row(0), row(1));
         }
-        ss->setColor(series_mapping[i++]);
+        ss->setColor((*series_mapping)[i++]);
         ss->setMarkerSize(7);
         addSeries(ss);
         original_series.push_back(ss);
@@ -160,7 +160,7 @@ SHCGaussDiagramChart::SHCGaussDiagramChart(SHC *shc, vector<MatrixXd*> *slice, U
 }
 
 SHCGaussDiagramChart::SHCGaussDiagramChart(SHC *shc, MatrixXd *slice, Ui::gaussTest *params_widget,
-                                           unordered_map<string, QColor> cluster_mapping, bool drawSI, const int current_slice_pos) {
+                                           unordered_map<string, QColor> *cluster_mapping, bool drawSI, const int current_slice_pos) {
     processor=make_shared<SHC>(shc);
     QtCharts::QScatterSeries *centers=NULL;
     QtCharts::QScatterSeries *bcenters=NULL;
@@ -181,7 +181,7 @@ SHCGaussDiagramChart::SHCGaussDiagramChart(SHC *shc, MatrixXd *slice, Ui::gaussT
 }
 
 SHCGaussChartView::SHCGaussChartView(SHC *shc, vector<MatrixXd*> *slice, Ui::gaussTest *params_widget,
-                                     unordered_map<string, QColor> cluster_mapping, vector<QColor> series_mapping,
+                                     unordered_map<string, QColor> *cluster_mapping, vector<QColor> *series_mapping,
                                      QString chartInfo, bool drawSI) :
                                         QChartView(new SHCGaussDiagramChart(shc, slice, params_widget, cluster_mapping, series_mapping,
                                                                             drawSI)) {
@@ -192,7 +192,7 @@ SHCGaussChartView::SHCGaussChartView(SHC *shc, vector<MatrixXd*> *slice, Ui::gau
     this->chartInfo=chartInfo;
 }
 
-SHCGaussChartView::SHCGaussChartView(SHC *shc, MatrixXd *slice, Ui::gaussTest *params_widget, unordered_map<string, QColor> cluster_mapping,
+SHCGaussChartView::SHCGaussChartView(SHC *shc, MatrixXd *slice, Ui::gaussTest *params_widget, unordered_map<string, QColor> *cluster_mapping,
                                      QString chartInfo, bool drawSI, const int current_slice_pos) :
         QChartView(new SHCGaussDiagramChart(shc, slice, params_widget, cluster_mapping, drawSI, current_slice_pos)) {
     setFixedSize(800, 800);

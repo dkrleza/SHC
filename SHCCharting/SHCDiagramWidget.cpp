@@ -17,13 +17,13 @@
 using namespace std;
 using namespace Qt;
 
-void SHCDiagramWidget::clusterMapping(unordered_map<string, QColor> &cluster_color_mapping, SHC *shc_classifier) {
+void SHCDiagramWidget::clusterMapping(unordered_map<string, QColor> *cluster_color_mapping, SHC *shc_classifier) {
     set<string> *clusts=shc_classifier->getTopContainers();
     for(string clus_id:*clusts)
-        if(cluster_color_mapping.find(clus_id)==cluster_color_mapping.end()) {
+        if(cluster_color_mapping->find(clus_id)==cluster_color_mapping->end()) {
             QColor clus_color=QColor::fromRgb(QRandomGenerator::global()->generate());
             clus_color.setAlpha(200);
-            cluster_color_mapping[clus_id]=clus_color;
+            (*cluster_color_mapping)[clus_id]=clus_color;
         }
     delete clusts;
 }
@@ -42,15 +42,15 @@ void SHCDiagramWidget::mergeSlices(vector<MatrixXd *> *all_slices, vector<Matrix
     }
 }
 
-void SHCDiagramWidget::createChart(const unordered_map<string, QColor> &cluster_color_mapping, Ui::gaussTest *params_widget,
+void SHCDiagramWidget::createChart(unordered_map<string, QColor> *cluster_color_mapping, Ui::gaussTest *params_widget,
                                    SHC *shc_classifier, MatrixXd *slice, const string info, bool drawSI, const int current_slice_pos) {
     SHCGaussChartView *gdw=new SHCGaussChartView(shc_classifier, slice, params_widget, cluster_color_mapping, QString::fromStdString(info),
                                                  drawSI, current_slice_pos);
     ui.diagramHolder->addWidget(gdw);
 }
 
-void SHCDiagramWidget::createChart(const unordered_map<string, QColor> &cluster_color_mapping, Ui::gaussTest *params_widget,
-                                   const vector<QColor> &series_color_mapping, SHC *shc_classifier, vector<MatrixXd *> *slice,
+void SHCDiagramWidget::createChart(unordered_map<string, QColor> *cluster_color_mapping, Ui::gaussTest *params_widget,
+                                   vector<QColor> *series_color_mapping, SHC *shc_classifier, vector<MatrixXd *> *slice,
                                    const string info, bool drawSI) {
     SHCGaussChartView *gdw=new SHCGaussChartView(shc_classifier, slice, params_widget, cluster_color_mapping, series_color_mapping,
                                                  QString::fromStdString(info), drawSI);
@@ -128,7 +128,8 @@ SHCDiagramWidget::SHCDiagramWidget(Ui::gaussTest *params_widget) {
         ui.diagramHolder->removeWidget(widget);
         widget->deleteLater();
     }
-    SHC *shc_classifier=NULL;
+    int parallel_instances=params_widget->parallelInstances->value();
+    vector<SHC*> shc_classifiers(parallel_instances);
     if(params_widget->shc_behavioral->isChecked()) {
         AgglomerationType at=NormalAgglomeration;
         switch (params_widget->aggloTemplate->currentIndex()) {
@@ -158,86 +159,154 @@ SHCDiagramWidget::SHCDiagramWidget(Ui::gaussTest *params_widget) {
             default:
                 break;
         }
-        shc_classifier=new SHC(2,at,dt,params_widget->decayPace->value());
-        shc_classifier->setSharedAgglomerationThreshold(params_widget->sha_agglo_theta->value());
+        for(int p=0;p<parallel_instances;p++) {
+            SHC *shcc=new SHC(2,at,dt,params_widget->decayPace->value(),false,parallel_instances>1);
+            shcc->setSharedAgglomerationThreshold(params_widget->sha_agglo_theta->value());
+            shc_classifiers[p]=shcc;
+        }
     }
     if(params_widget->shc_specific->isChecked()) {
-        shc_classifier=new SHC(params_widget->mdTheta->value(), true, true, new VectorXd(params_widget->virtualCovariance->value()*VectorXd::Ones(2)),
-                               params_widget->aggloCounter->value(),10,40,(float)params_widget->removeCompSizeRatio->value(),
-                               (float)params_widget->driftCheckCompSizeRatio->value(),(float)params_widget->driftMovementMDRatio->value(),
-                               params_widget->decayPace_manual->value());
-        shc_classifier->setSharedAgglomerationThreshold(params_widget->sha_agglo_theta_man->value());
-    }
-    if(params_widget->sigmaIndexUsage->isChecked()) shc_classifier->useSigmaIndex(params_widget->sigmaIndexNeighborhood->value(),params_widget->balancedSigmaIndex->isChecked());
-    vector<MatrixXd*> *all_slices=new vector<MatrixXd*>();
-    unordered_map<string, QColor> cluster_color_mapping;
-    vector<QColor> series_color_mapping;
-    int tmp_totalPages=totalPages,current_processing_slice_pos=-1;
-    for(int i=0;i<tmp_totalPages;i++) {
-        //vector<MatrixXd*> *slice=gds->generate((int)(params_widget->totalElementsValue->value()/totalPages),i);
-        GDS_Generated *gg=gds->generate((int)(params_widget->totalElementsValue->value()/totalPages),i);
-        if(series_color_mapping.size()==0) {
-            if(gg->slice->size()==1)
-                series_color_mapping.push_back(QColorConstants::Black);
-            else {
-                for(unsigned j=0;j<gg->slice->size();j++)
-                    series_color_mapping.push_back(QColor::fromRgb(QRandomGenerator::global()->generate()));
-            }
+        for(int p=0;p<parallel_instances;p++) {
+            SHC *shcc=new SHC(params_widget->mdTheta->value(), parallel_instances>1, true, new VectorXd(params_widget->virtualCovariance->value()*VectorXd::Ones(2)),
+                              params_widget->aggloCounter->value(),10,40,(float)params_widget->removeCompSizeRatio->value(),
+                              (float)params_widget->driftCheckCompSizeRatio->value(),(float)params_widget->driftMovementMDRatio->value(),
+                              params_widget->decayPace_manual->value());
+            shcc->setSharedAgglomerationThreshold(params_widget->sha_agglo_theta_man->value());
+            shc_classifiers[p]=shcc;
         }
-        
-        shc_classifier->setEventCallback([&](SHCEvent *event) {
-            if(event->eventType==DriftFrontTrigger || event->eventType==BeforeObsoleteComponentDeleted ||
-               event->eventType==AfterObsoleteComponentDeleted) {
-                stringstream ss;
-                if(params_widget->displayFrontTriggerEvent->isChecked() && event->eventType==DriftFrontTrigger) {
-                    ss << "Triggered by the component " << *event->component_id << " - drift front threshold reached";
-                    MatrixXd *tslice=event->shc->getCache();
-                    unordered_map<string, QColor> tcluster_color_mapping;
-                    clusterMapping(tcluster_color_mapping, event->shc);
-                    createChart(tcluster_color_mapping, params_widget, event->shc, tslice, ss.str(),
-                                params_widget->displaySI->isChecked(), -1);
-                    totalPages++;
-                    delete tslice;
-                } else if((params_widget->displayBeforeDeleteObsoleteEvent->isChecked() && event->eventType==BeforeObsoleteComponentDeleted) ||
-                          (params_widget->displayAfterDeleteObsoleteEvent->isChecked() && event->eventType==AfterObsoleteComponentDeleted)) {
-                    clusterMapping(cluster_color_mapping, shc_classifier);
-                    if(event->eventType==BeforeObsoleteComponentDeleted) ss << "Component " << *event->component_id << " is about to be deleted as obsolete";
-                    if(event->eventType==AfterObsoleteComponentDeleted) ss << "Component " << *event->component_id << " was deleted as obsolete";
-                    createChart(cluster_color_mapping, params_widget, shc_classifier, gg->combined, ss.str(),
-                                params_widget->displaySI->isChecked(), current_processing_slice_pos);
-                    totalPages++;
+    }
+    if(parallel_instances>1) {
+        for(int p=1;p<parallel_instances;p++) {
+            shc_classifiers[p]->setDeltaLoggingSourceName("node"+to_string(p));
+        }
+    }
+    if(params_widget->sigmaIndexUsage->isChecked()) {
+        for(SHC *shcc:shc_classifiers)
+            shcc->useSigmaIndex(params_widget->sigmaIndexNeighborhood->value(),params_widget->balancedSigmaIndex->isChecked());
+    }
+    vector<vector<MatrixXd*>*> all_slices(parallel_instances);
+    for(int p=0;p<parallel_instances;p++) all_slices[p]=new vector<MatrixXd*>();
+    vector<unordered_map<string, QColor>*> cluster_color_mapping(parallel_instances);
+    for(int p=0;p<parallel_instances;p++) cluster_color_mapping[p]=new unordered_map<string, QColor>();
+    vector<vector<QColor>*> series_color_mapping(parallel_instances);
+    for(int p=0;p<parallel_instances;p++) series_color_mapping[p]=new vector<QColor>();
+    int tmp_totalPages=totalPages,current_processing_slice_pos=-1;
+    totalPages*=parallel_instances;
+    for(int i=0;i<tmp_totalPages;i++) {
+        vector<shared_ptr<DeltaLogger>> dl(parallel_instances);
+        for(int p=0;p<parallel_instances;p++) {
+            GDS_Generated *gg=gds->generate((int)(params_widget->totalElementsValue->value()/totalPages),i);
+            // Pull out all the instance values
+            SHC *shcc=shc_classifiers[p];
+            vector<MatrixXd*> *as=all_slices[p];
+            unordered_map<string, QColor> *ccm=cluster_color_mapping[p];
+            vector<QColor> *scm=series_color_mapping[p];
+            
+            if(scm->size()==0) {
+                if(gg->slice->size()==1)
+                    scm->push_back(QColorConstants::Black);
+                else {
+                    for(unsigned j=0;j<gg->slice->size();j++)
+                    scm->push_back(QColor::fromRgb(QRandomGenerator::global()->generate()));
                 }
             }
-            if(event->eventType==SlicePositionChange) current_processing_slice_pos=*event->slice_pos;
-            delete event;
-        });
-        shc_classifier->process(gg->combined);
-        //cout << "Query time:" << shc_classifier->getTimes()[0] << " ms" << endl;
-        //shc_classifier->printSigmaIndex();
-        
-        clusterMapping(cluster_color_mapping, shc_classifier);
-        mergeSlices(all_slices, gg->slice);
-        stringstream ss;
-        ss << "Normal view for page " << (i+1);
-        createChart(cluster_color_mapping, params_widget, series_color_mapping, shc_classifier, gg->slice, ss.str(),
-                    params_widget->displaySI->isChecked());
-        shc_classifier->pseudoOffline(true); // let us see
-        delete gg;
+            
+            shcc->setEventCallback([&](SHCEvent *event) {
+                if(event->eventType==DriftFrontTrigger || event->eventType==BeforeObsoleteComponentDeleted ||
+                   event->eventType==AfterObsoleteComponentDeleted) {
+                    stringstream ss;
+                    if(params_widget->displayFrontTriggerEvent->isChecked() && event->eventType==DriftFrontTrigger) {
+                        ss << "Triggered by the component " << *event->component_id << " - drift front threshold reached";
+                        MatrixXd *tslice=event->shc->getCache();
+                        unordered_map<string, QColor> *tcluster_color_mapping=new unordered_map<string, QColor>();
+                        clusterMapping(tcluster_color_mapping, event->shc);
+                        createChart(tcluster_color_mapping, params_widget, event->shc, tslice, ss.str(),
+                                    params_widget->displaySI->isChecked(), -1);
+                        totalPages++;
+                        delete tslice;delete tcluster_color_mapping;
+                    } else if((params_widget->displayBeforeDeleteObsoleteEvent->isChecked() && event->eventType==BeforeObsoleteComponentDeleted) ||
+                              (params_widget->displayAfterDeleteObsoleteEvent->isChecked() && event->eventType==AfterObsoleteComponentDeleted)) {
+                        clusterMapping(ccm, shcc);
+                        if(event->eventType==BeforeObsoleteComponentDeleted) ss << "Component " << *event->component_id << " is about to be deleted as obsolete";
+                        if(event->eventType==AfterObsoleteComponentDeleted) ss << "Component " << *event->component_id << " was deleted as obsolete";
+                        createChart(ccm, params_widget, shcc, gg->combined, ss.str(), params_widget->displaySI->isChecked(), current_processing_slice_pos);
+                        totalPages++;
+                    }
+                }
+                if(event->eventType==SlicePositionChange) current_processing_slice_pos=*event->slice_pos;
+                delete event;
+            });
+            tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> res=shcc->process(gg->combined);
+            dl[p]=get<shared_ptr<DeltaLogger>>(res);
+            
+            clusterMapping(ccm, shcc);
+            mergeSlices(as, gg->slice);
+            stringstream ss;
+            ss << "Normal view for page " << (i+1) << " and SHC " << shcc->getDeltaLoggingSourceName();
+            createChart(ccm, params_widget, scm, shcc, gg->slice, ss.str(), params_widget->displaySI->isChecked());
+            shcc->pseudoOffline(true); // let us see
+            delete gg;
+        }
+        if(parallel_instances>1) {
+            SHC *master=shc_classifiers[0];
+            shared_ptr<DeltaLogger> master_dl=dl[0];
+            master_dl->print(cout,"master");
+            for(int p1=1;p1<parallel_instances;p1++) {
+                string node_id=shc_classifiers[p1]->getDeltaLoggingSourceName();
+                dl[p1]->print(cout,node_id);
+                master->consumeDeltaLog(dl[p1],&node_id,master_dl,true);
+                master_dl->print(cout,"master");
+            }
+            for(int p1=1;p1<parallel_instances;p1++) {
+                shc_classifiers[p1]->consumeDeltaLog(master_dl,NULL,nullptr,true);
+            }
+            vector<MatrixXd*> *as=all_slices[0];
+            unordered_map<string, QColor> *ccm=cluster_color_mapping[0];
+            clusterMapping(ccm, master);
+            vector<QColor> *scm=series_color_mapping[0];
+            stringstream ss;
+            ss << "After master merge";
+            totalPages++;
+            createChart(ccm, params_widget, scm, master, as, ss.str(), params_widget->displaySI->isChecked());
+            for(int p1=1;p1<parallel_instances;p1++) {
+                vector<MatrixXd*> *as=all_slices[p1];
+                unordered_map<string, QColor> *ccm=cluster_color_mapping[p1];
+                clusterMapping(ccm, shc_classifiers[p1]);
+                vector<QColor> *scm=series_color_mapping[p1];
+                stringstream ss;
+                ss << "After " << shc_classifiers[p1]->getDeltaLoggingSourceName() << " merge";
+                totalPages++;
+                createChart(ccm, params_widget, scm, shc_classifiers[p1], as, ss.str(), params_widget->displaySI->isChecked());
+            }
+        }
     }
     delete gds;
     if(totalPages>1) {
-        totalPages++;
-        SHCGaussChartView *gdw=new SHCGaussChartView(shc_classifier, all_slices, params_widget, cluster_color_mapping, series_color_mapping,
-                                                     QString::fromStdString("Full view"), params_widget->displaySI->isChecked());
-        ui.diagramHolder->addWidget(gdw);
+        for(int p=0;p<parallel_instances;p++) {
+            totalPages++;
+            
+            SHC *shcc=shc_classifiers[p];
+            vector<MatrixXd*> *as=all_slices[p];
+            unordered_map<string, QColor> *ccm=cluster_color_mapping[p];
+            vector<QColor> *scm=series_color_mapping[p];
+            
+            stringstream ss;
+            ss << "Full view for SHC instance " << (p+1);
+            SHCGaussChartView *gdw=new SHCGaussChartView(shcc, as, params_widget, ccm, scm, QString::fromStdString(ss.str()), params_widget->displaySI->isChecked());
+            ui.diagramHolder->addWidget(gdw);
+        }
     }
     ui.diagramHolder->setCurrentIndex(page-1);
     adjustButtons();
     printCurrentPage();
-    for(unsigned i=0;i<all_slices->size();i++)
-        delete all_slices->at(i);
-    delete all_slices;
-    delete shc_classifier;
+    for(int p=0;p<parallel_instances;p++) {
+        for(unsigned i=0;i<all_slices[p]->size();i++)
+            delete all_slices[p]->at(i);
+        delete all_slices[p];
+        delete cluster_color_mapping[p];
+        delete series_color_mapping[p];
+        delete shc_classifiers[p];
+    }
 }
 
 SHCDiagramWidget::~SHCDiagramWidget() {

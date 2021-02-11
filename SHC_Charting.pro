@@ -10,10 +10,11 @@ FORMS   = SHCTestingShell/shcShell.ui SHCTestingShell/gaussTest.ui SHCTestingShe
 
 HEADERS = \
     SHC/SHC_Component.hpp \
+    SHC/SHC_ComponentConnection.hpp \
+    SHC/SHC_DeltaLogger.hpp \
     SHC/SHC.hpp \
     SHC/SHC_Container.hpp \
     SHC/SHC_Utils.hpp \
-    SHC/SHC_ComponentConnection.hpp \
     SHC/SHC_Decay.hpp \
     SHC/SigmaIndex.hpp \
     SHC/SigmaIndexProxy.hpp \
@@ -36,10 +37,11 @@ HEADERS = \
 
 SOURCES = \
     SHC/SHC_Component.cpp \
+    SHC/SHC_ComponentConnection.cpp \
+    SHC/SHC_DeltaLogger.cpp \
     SHC/SHC_Container.cpp \
     SHC/SHC_Utils.cpp \
     SHC/SHC.cpp \
-    SHC/SHC_ComponentConnection.cpp \
     SHC/SHC_Decay.cpp \
     SHC/SigmaIndex.cpp \
     SHC/SigmaIndex_Inline.cpp \

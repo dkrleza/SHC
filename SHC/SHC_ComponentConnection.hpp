@@ -39,6 +39,8 @@ public:
     SHC_Component *getComponent1();
     SHC_Component *getComponent2();
     long getPoints();
+    void setPoints(long v);
+    void addPoints(long v);
 };
 
 class SHC_ComponentConnection_Set {
@@ -51,7 +53,7 @@ private:
 public:
     SHC_ComponentConnection_Set()=default;
     ~SHC_ComponentConnection_Set();
-    SHC_ComponentConnection *connect(SHC_Component *c1, SHC_Component *c2);
+    SHC_ComponentConnection *connect(SHC_Component *c1, SHC_Component *c2, bool add_point=true);
     bool isConnected(SHC_Component *c1, SHC_Component *c2, bool directly=false);
     set<SHC_Component *> *getConnectedComponents(SHC_Component *c);
     SHC_Component *getMaxConnectedComponents(SHC_Component *c);

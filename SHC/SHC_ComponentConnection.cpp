@@ -23,14 +23,15 @@ SHC_Component *SHC_ComponentConnection::getConnectedComponent(SHC_Component *c) 
     else return c1;
 }
 
-SHC_ComponentConnection *SHC_ComponentConnection_Set::connect(SHC_Component *c1, SHC_Component *c2) {
+SHC_ComponentConnection *SHC_ComponentConnection_Set::connect(SHC_Component *c1, SHC_Component *c2, bool add_point) {
     SHC_ComponentConnection *cc=NULL;
     if(!isConnected(c1, c2, true)) {
         cc=new SHC_ComponentConnection(c1, c2);
+        if(!add_point) cc->setPoints(0);
         _set[{c1->getId(), c2->getId()}]=cc;
     } else {
         cc=_set[{c1->getId(), c2->getId()}];
-        cc->addPoint();
+        if(add_point) cc->addPoint();
     }
     if(_links.find(c1->getId())==_links.end()) _links[c1->getId()]=new set<SHC_Component *>();
     _links[c1->getId()]->insert(c2);
@@ -154,6 +155,14 @@ SHC_Component *SHC_ComponentConnection::getComponent2() {
 
 long SHC_ComponentConnection::getPoints() {
     return this->points;
+}
+
+void SHC_ComponentConnection::setPoints(long v) {
+    this->points=v;
+}
+
+void SHC_ComponentConnection::addPoints(long v) {
+    this->points+=v;
 }
 
 SHC_ComponentConnection_Set::~SHC_ComponentConnection_Set() {

@@ -42,7 +42,7 @@
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <property name="elideMode">
     <enum>Qt::ElideRight</enum>
@@ -137,7 +137,7 @@
       <number>100</number>
      </property>
      <property name="value">
-      <number>20000</number>
+      <number>2000</number>
      </property>
     </widget>
     <widget class="QLabel" name="l6_4">
@@ -185,7 +185,7 @@
       <number>1</number>
      </property>
      <property name="value">
-      <number>1</number>
+      <number>10</number>
      </property>
     </widget>
     <widget class="QStackedWidget" name="placeholder">
@@ -265,7 +265,7 @@
         <number>1000</number>
        </property>
        <property name="value">
-        <number>25</number>
+        <number>10</number>
        </property>
       </widget>
       <widget class="QLabel" name="l2">
@@ -307,7 +307,7 @@
         <number>1000</number>
        </property>
        <property name="value">
-        <number>25</number>
+        <number>10</number>
        </property>
       </widget>
       <widget class="QDoubleSpinBox" name="maxCovariance">
@@ -574,7 +574,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>190</y>
+       <y>215</y>
        <width>136</width>
        <height>20</height>
       </rect>
@@ -587,7 +587,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>25</y>
+       <y>50</y>
        <width>171</width>
        <height>20</height>
       </rect>
@@ -603,7 +603,7 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>45</y>
+       <y>70</y>
        <width>501</width>
        <height>146</height>
       </rect>
@@ -788,7 +788,7 @@
      <property name="geometry">
       <rect>
        <x>30</x>
-       <y>210</y>
+       <y>235</y>
        <width>501</width>
        <height>366</height>
       </rect>
@@ -1194,7 +1194,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>5</y>
+       <y>30</y>
        <width>186</width>
        <height>20</height>
       </rect>
@@ -1203,14 +1203,14 @@
       <string>Use Sigma indexing tree</string>
      </property>
      <property name="checked">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
     </widget>
     <widget class="QSpinBox" name="sigmaIndexNeighborhood">
      <property name="geometry">
       <rect>
        <x>180</x>
-       <y>5</y>
+       <y>30</y>
        <width>71</width>
        <height>22</height>
       </rect>
@@ -1232,16 +1232,51 @@
      <property name="geometry">
       <rect>
        <x>265</x>
-       <y>5</y>
+       <y>30</y>
        <width>186</width>
        <height>20</height>
       </rect>
      </property>
      <property name="text">
-      <string>Balanced Sigma index</string>
+      <string>Corrected Sigma index</string>
      </property>
      <property name="checked">
       <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="parallelInstances">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>5</y>
+       <width>71</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>6</number>
+     </property>
+     <property name="singleStep">
+      <number>1</number>
+     </property>
+     <property name="value">
+      <number>2</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="l6_17">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>5</y>
+       <width>111</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Parallel instances</string>
      </property>
     </widget>
    </widget>

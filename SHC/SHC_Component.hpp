@@ -1,10 +1,11 @@
 #ifndef SHC_Component_hpp
 #define SHC_Component_hpp
 
-#include <Eigen/Sparse>
+#include <Eigen/Dense>
 #include <mutex>
 #include <string>
 #include <set>
+#include <vector>
 #include <unordered_map>
 #include "SHC_Container.hpp"
 #include <memory>
@@ -67,6 +68,7 @@ class SHC;
 struct SHCEvent;
 class SHC_Component : public SHC_Containable {
 private:
+    string source_node="master";
     SHC_Component *redirect_to=NULL,*baseline=NULL;
     unordered_map<string, SHC_Component*> redirected_from;
     SHC *front_resolver=NULL;
@@ -105,7 +107,9 @@ public:
     double connectionMeasure(SHC_Component *comp,double theta);
     void print(ostream &o_str);
     VectorXd *getMean();
+    void setMean(VectorXd *new_mean);
     MatrixXd *getCovariance();
+    void setCovariance(MatrixXd *new_cov,bool new_inverted=false);
     long getElements();
     void setElements(long new_elements);
     bool isOutlier();
@@ -113,6 +117,7 @@ public:
     void setObsolete(bool obsolete);
     bool isObsolete();
     bool isBlocked();
+    void setBlocked(bool blocked);
     bool hasBaseline();
     SHC_Component *getBaseline();
     unordered_map<string, SHC_Containable *> fetchChildComponents();
@@ -140,6 +145,9 @@ public:
     void findNeighbors(SHC *parent);
     void agglomerateNeighborhood(SHC *parent);
     void removeFromNeighborhood(SHC *parent);
+    std::set<SHC_Component*> *getNeighborhood();
+    void setSourceNode(string source_node);
+    string getSourceNode();
 };
 
 #endif /* SHC_Component_hpp */

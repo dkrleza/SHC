@@ -33,6 +33,7 @@ SHCComponentTooltip::SHCComponentTooltip(SHC_Component *comp) : QWidget() {
     ui.elements->setText(QString::fromStdString(formatDouble((double)comp->getElements(), 0)));
     ui.redirectedTo->setText(QString::fromStdString(comp->isRedirected() ? comp->getRedirectedComponent()->getId() : "-----"));
     ui.parent->setText(QString::fromStdString(comp->getParent() ? comp->getParent()->getId() : "-----"));
+    ui.sourceNode->setText(QString::fromStdString(comp->getSourceNode()));
     ui.decayEnabled->setChecked(comp->getDecayHandler());
     ui.decayEnabled->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui.decayEnabled->setFocusPolicy(Qt::NoFocus);

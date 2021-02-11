@@ -53,6 +53,7 @@ public:
     bool hasChildren();
     void addTrace(SHC_Containable *previous);
     void addTrace(pair<string, std::set<string>> *prev_pair);
+    void addTrace(std::set<string> *prev_log);
     bool checkTrace(string id);
     std::set<string> *getTrace();
 };
