@@ -2,15 +2,16 @@
 
 DL_Component *DeltaLogger::logComponent(SHC_Component *logged_comp,string source,int init_delta_elements) {
     DL_Component *c=NULL;
-    if(c_delta.find(logged_comp->getId())==c_delta.end()) {
-        c=new DL_Component(logged_comp->getId(),logged_comp->getParent()->getId());
+    string id=logged_comp->getId();
+    if(c_delta.find(id)==c_delta.end()) {
+        c=new DL_Component(id,logged_comp->getParent()->getId());
         c->source=source;
         c->delta_elements[source]=init_delta_elements;
         if(!logged_comp->isOutlier()) c->start=new DL_Component_SimpleData(logged_comp);
         else c->created=true;
-        c_delta[logged_comp->getId()]=c;
+        c_delta[id]=c;
     } else {
-        c=c_delta[logged_comp->getId()];
+        c=c_delta[id];
         if(c->delta_elements.find(source)==c->delta_elements.end())            
             c->delta_elements[source]=init_delta_elements;
     }
@@ -26,8 +27,12 @@ void DeltaLogger::finalizeComponent(SHC_Component *logged_comp) {
     DL_Component *c=NULL;
     if(c_delta.find(logged_comp->getId())!=c_delta.end()) {
         c=c_delta[logged_comp->getId()];
+        if(c->end) delete c->end;
         c->end=new DL_Component_SimpleData(logged_comp);
-        if(logged_comp->isRedirected()) c->redirectedTo=new string(logged_comp->getRedirectedComponent()->getId());
+        if(logged_comp->isRedirected()) {
+            if(c->redirectedTo) delete c->redirectedTo;
+            c->redirectedTo=new string(logged_comp->getRedirectedComponent()->getId());
+        }
         if(logged_comp->hasBaseline()) c->baseline=new DL_Component_SimpleData(logged_comp->getBaseline());
         for(SHC_Component *o:*logged_comp->getNeighborhood()) c->neighborhood.insert(o->getId());
         for(string t_id:*logged_comp->getTrace()) c->trace.insert(t_id);
@@ -40,11 +45,12 @@ void DeltaLogger::finalizeComponent(SHC_Component *logged_comp) {
 
 void DeltaLogger::logComponentConnection(SHC_ComponentConnection *logged_cc) {
     DL_ComponentConnection *cc=NULL;
-    if(cc_delta.find({logged_cc->getComponent1()->getId(),logged_cc->getComponent2()->getId()})!=cc_delta.end())
-        cc=cc_delta[{logged_cc->getComponent1()->getId(),logged_cc->getComponent2()->getId()}];
+    string id1=logged_cc->getComponent1()->getId(),id2=logged_cc->getComponent2()->getId();
+    if(cc_delta.find({id1,id2})!=cc_delta.end())
+        cc=cc_delta[{id1,id2}];
     else {
         cc=new DL_ComponentConnection(logged_cc);
-        cc_delta[{logged_cc->getComponent1()->getId(),logged_cc->getComponent2()->getId()}]=cc;
+        cc_delta[{id1,id2}]=cc;
     }
     ++cc->points;
 }
@@ -53,18 +59,25 @@ void DeltaLogger::logComponentRemoval(SHC_Component *removed_comp) {
     string rid=removed_comp->getId();
     cr_delta.insert(rid);
     for(pair<string,DL_Component*> it:c_delta) {
-        if(it.second->redirectedTo && *it.second->redirectedTo==rid)
+        if(it.second->redirectedTo && *it.second->redirectedTo==rid) {
+            delete it.second->redirectedTo;
             it.second->redirectedTo=NULL;
+        }
         it.second->neighborhood.erase(rid);
     }
-    c_delta.erase(rid);
+    if(c_delta.find(rid)!=c_delta.end()) {
+        delete c_delta[rid];
+        c_delta.erase(rid);
+    }
     vector<SHC_ComponentConnectionId<string, string>> removals;
     for(pair<SHC_ComponentConnectionId<string, string>,DL_ComponentConnection*> it:cc_delta) {
         if(it.second->c1_id==rid || it.second->c2_id==rid)
             removals.push_back(it.first);
     }
-    for(SHC_ComponentConnectionId<string, string> it:removals)
+    for(SHC_ComponentConnectionId<string, string> it:removals) {
+        delete cc_delta[it];
         cc_delta.erase(it);
+    }
 }
 
 DeltaLogger::~DeltaLogger() {
@@ -75,9 +88,9 @@ DeltaLogger::~DeltaLogger() {
 }
 
 void DeltaLogger::print(ostream &o_str,string source) {
-    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-    cout << "++ Delta log " << source << endl;
-    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    o_str << "+++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    o_str << "++ Delta log " << source << endl;
+    o_str << "+++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
     unordered_map<string,long> parents,totals;
     long total_end=0;
     for(pair<string,DL_Component*> it1:c_delta) {

@@ -236,8 +236,8 @@ SHCDiagramWidget::SHCDiagramWidget(Ui::gaussTest *params_widget) {
                 if(event->eventType==SlicePositionChange) current_processing_slice_pos=*event->slice_pos;
                 delete event;
             });
-            tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> res=shcc->process(gg->combined);
-            dl[p]=get<shared_ptr<DeltaLogger>>(res);
+            pair<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> res=shcc->process(gg->combined);
+            dl[p]=res.second;
             
             clusterMapping(ccm, shcc);
             mergeSlices(as, gg->slice);
@@ -254,11 +254,11 @@ SHCDiagramWidget::SHCDiagramWidget(Ui::gaussTest *params_widget) {
             for(int p1=1;p1<parallel_instances;p1++) {
                 string node_id=shc_classifiers[p1]->getDeltaLoggingSourceName();
                 dl[p1]->print(cout,node_id);
-                master->consumeDeltaLog(dl[p1],&node_id,master_dl,true);
+                master->consumeDeltaLog(dl[p1],&node_id,master_dl,true,&cout);
                 master_dl->print(cout,"master");
             }
             for(int p1=1;p1<parallel_instances;p1++) {
-                shc_classifiers[p1]->consumeDeltaLog(master_dl,NULL,nullptr,true);
+                shc_classifiers[p1]->consumeDeltaLog(master_dl,NULL,nullptr,true,&cout);
             }
             vector<MatrixXd*> *as=all_slices[0];
             unordered_map<string, QColor> *ccm=cluster_color_mapping[0];

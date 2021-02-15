@@ -109,7 +109,7 @@ private:
     _int_cr classify(VectorXd *newElement, vector<SHC_Component*> *forComponents, bool classifyOnly=false);
     function<void (SHCEvent*)> eventCallback;
     set<string> decayedOutliers;
-    DeltaLogger *delta=NULL;
+    shared_ptr<DeltaLogger> delta=nullptr;
 protected:
     mutex m1;
 public:
@@ -122,7 +122,7 @@ public:
     SHC(SHC *cloneFrom);
     ~SHC();
     shared_ptr<ClassificationResult> process(VectorXd *newElement, bool classifyOnly=false);
-    tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> process(MatrixXd *elements, bool initNewDeltaLogger=false, bool classifyOnly=false);
+    pair<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> process(MatrixXd *elements, bool initNewDeltaLogger=false, bool classifyOnly=false);
     SHC_Component *getComponent(string *comp_id);
     set<string> *getTopContainers(bool clusters=true, bool outliers=true);
     vector<SHC_Component_Details *> *getClassificationDetails(string *container_id,double theta,int dim1,int dim2,bool single=false);
@@ -162,7 +162,7 @@ public:
     long getNodeCounter();
     SigmaIndex<SHC_Component*> *getSigmaIndex();
     void consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_src=NULL,shared_ptr<DeltaLogger> amending_log=nullptr,
-                         bool dropCosumationActivity=false);
+                         bool dropCosumationActivity=false,ostream *o_str=NULL);
     void incDeltaElementsInDeltaLog(SHC_Component *comp,int number=1);
     void setDeltaLoggingSourceName(string s);
     string getDeltaLoggingSourceName();

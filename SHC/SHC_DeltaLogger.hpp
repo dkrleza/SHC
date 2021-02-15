@@ -23,6 +23,10 @@ struct DL_Component_SimpleData {
         //cout << "Covariance:" << *covariance << endl;
         elements=c->getElements();
     }
+    ~DL_Component_SimpleData() {
+        if(mean) delete mean;
+        if(covariance) delete covariance;
+    }
 };
 
 struct DL_Component {
@@ -36,6 +40,12 @@ struct DL_Component {
     DL_Component(string id,string parent_id) {
         this->id=id;
         this->parent_id=parent_id;
+    }
+    ~DL_Component() {
+        if(redirectedTo) delete redirectedTo;
+        if(start) delete start;
+        if(end) delete end;
+        if(baseline) delete baseline;
     }
 };
 

@@ -403,9 +403,12 @@ shared_ptr<ClassificationResult> SHC::process(VectorXd *newElement, bool classif
     return res;
 }
 
-tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> SHC::process(MatrixXd *elements, bool initNewDeltaLogger, bool classifyOnly) {
+pair<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogger>> SHC::process(MatrixXd *elements, bool initNewDeltaLogger, bool classifyOnly) {
     if(parallelize) {
-        if(!delta || (delta && initNewDeltaLogger)) delta=new DeltaLogger();
+        if(!delta || (delta && initNewDeltaLogger)) {
+            if(delta) delta.reset();
+            delta=make_shared<DeltaLogger>();
+        }
     }
     qTime=0;uTime=0;
     std::chrono::time_point<std::chrono::system_clock> pst=std::chrono::system_clock::now();
@@ -422,14 +425,10 @@ tuple<shared_ptr<vector<shared_ptr<ClassificationResult>>>,shared_ptr<DeltaLogge
     }
     std::chrono::time_point<std::chrono::system_clock> pet=std::chrono::system_clock::now();
     pTime=std::chrono::duration_cast<std::chrono::microseconds>(pet-pst).count();
-    shared_ptr<DeltaLogger> delta_res=nullptr;
-    if(delta) {
+    if(delta)
         for(pair<string,SHC_Component*> it:components) delta->finalizeComponent(it.second);
-        delta_res=make_shared<DeltaLogger>(*delta);
-        delta=NULL;
-    }
 
-    return make_tuple(res,delta_res);
+    return make_pair(res,delta);
 }
 
 SHC_Component *SHC::getComponent(string *comp_id) {
@@ -1029,14 +1028,15 @@ SigmaIndex<SHC_Component*> *SHC::getSigmaIndex() {
     return sigma_index;
 }
 
-void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_src,shared_ptr<DeltaLogger> amending_log,bool dropCosumationActivity) {
-    if(dropCosumationActivity) {
-        cout << "###################################################" << endl;
-        cout << "## Consuming log " << (delta_log_src ? *delta_log_src : "master") << endl;
-        cout << "###################################################" << endl;
+void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_src,shared_ptr<DeltaLogger> amending_log,bool dropCosumationActivity,
+                          ostream *o_str) {
+    if(dropCosumationActivity && o_str) {
+        (*o_str) << "###################################################" << endl;
+        (*o_str) << "## Consuming log " << (delta_log_src ? *delta_log_src : "master") << endl;
+        (*o_str) << "###################################################" << endl;
     }
-    if(amending_log) delta=amending_log.get();
-    else if(!delta_log) delta=new DeltaLogger();
+    if(amending_log) delta=amending_log;
+    else if(!delta_log) delta=make_shared<DeltaLogger>();
     else delta=NULL;
     int total_dropped_points=0;
     for(string rid:delta_log->cr_delta)
@@ -1062,14 +1062,14 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
                         if(md_out<(theta/16)) {
                             existing_outlier=true;
                             if(delta) delta->cr_delta.insert(it.second->id);
-                            if(dropCosumationActivity) cout << "****** it seems that " << local_id << " exists somehow here: " << out->getId() << endl;
+                            if(dropCosumationActivity && o_str) (*o_str) << "****** it seems that " << local_id << " exists somehow here: " << out->getId() << endl;
                             total_dropped_points++;
                             break;
                         } else if(md_out<theta) {
                             out->addNewElement(it.second->end->mean, this);
                             existing_outlier=true;
                             if(delta) delta->cr_delta.insert(it.second->id);
-                            if(dropCosumationActivity) cout << "****** we added " << local_id << " to: " << out->getId() << endl;
+                            if(dropCosumationActivity && o_str) (*o_str) << "****** we added " << local_id << " to: " << out->getId() << endl;
                             break;
                         }
                     }
@@ -1170,7 +1170,7 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
                     if(!c->isRedirected() || c->getRedirectedComponent()!=r_c) {
                         c->redirectComponent(r_c);
                         if(c->getParent()!=r_c->getParent()) {
-                            if(dropCosumationActivity) cout << "*** join components " << c->getId() << " " << r_c->getId() << endl;
+                            if(dropCosumationActivity && o_str) (*o_str) << "*** join components " << c->getId() << " " << r_c->getId() << endl;
                             if(delta) {
                                 delta->logComponent(c,deltaLoggingSourceName);
                                 delta->logComponent(r_c,deltaLoggingSourceName);
@@ -1199,7 +1199,7 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
             for(pair<SHC_Component*,double> it:*class_res.classified_map) {
                 if(!it.first->isOutlier()) {
                     if(c->getParent()!=it.first->getParent()) {
-                        if(dropCosumationActivity) cout << "*** join components " << c->getId() << " " << it.first->getId() << endl;
+                        if(dropCosumationActivity && o_str) (*o_str) << "*** join components " << c->getId() << " " << it.first->getId() << endl;
                         if(delta) {
                             delta->logComponent(c,deltaLoggingSourceName);
                             delta->logComponent(it.first,deltaLoggingSourceName);
@@ -1207,7 +1207,7 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
                         joinComponents(c, it.first);
                     }
                 } else {
-                    if(dropCosumationActivity) cout << "*** agglomerate " << c->getId() << " " << it.first->getId() << endl;
+                    if(dropCosumationActivity && o_str) (*o_str) << "*** agglomerate " << c->getId() << " " << it.first->getId() << endl;
                     agglomerate(c, it.first);
                 }
             }
@@ -1216,7 +1216,7 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
                 for(pair<SHC_Component*,double> it:*class_res.classified_map) {
                     if(!it.first->isOutlier()) {
                         if(c->getElements()<=it.first->getElements()) {
-                            if(dropCosumationActivity) cout << "*** redirect " << c->getId() << " to " << it.first->getId() << endl;
+                            if(dropCosumationActivity && o_str) (*o_str) << "*** redirect " << c->getId() << " to " << it.first->getId() << endl;
                             c->redirectComponent(it.first);
                             redirected=true;
                             break;
@@ -1243,7 +1243,7 @@ void SHC::consumeDeltaLog(shared_ptr<DeltaLogger> delta_log,string *delta_log_sr
         for(pair<string,SHC_Component*> it:components) delta->finalizeComponent(it.second);
         delta=NULL;
     }
-    if(dropCosumationActivity) cout << "$$$$ Total dropped points " << total_dropped_points << endl;
+    if(dropCosumationActivity && o_str) (*o_str) << "$$$$ Total dropped points " << total_dropped_points << endl;
 }
 
 void SHC::incDeltaElementsInDeltaLog(SHC_Component *comp,int number) {
