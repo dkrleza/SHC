@@ -65,7 +65,8 @@ SOURCES = \
     SHCCharting/SHCDatasetProcessing.cpp
     
 INCLUDEPATH += \
-    /Users/dkrleza/Documents/FER/Ostalo/libs
+    /Users/dkrleza/Documents/FER/Ostalo/libs \
+    /usr/include/eigen3
     
 OBJECTS += SHCShellWindow SHCGaussGeneratorWindow SHCGaussChartView SHCGaussDiagramChart SHCDiagramWidget SHCClusterDefWidget \
            SHCOutlierDefWidget OpenGLTestWidget SHCLinMovingClusterDefWidget SHCComponentTooltip SHCComponentAreaSeries \
