@@ -8,7 +8,7 @@
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCore/QRandomGenerator>
-#include "SHC.hpp"
+#include "SHC/SHC.hpp"
 #include <Eigen/Dense>
 #include "SHCChartingUtils.hpp"
 #include "SHCComponentAreaSeries.hpp"

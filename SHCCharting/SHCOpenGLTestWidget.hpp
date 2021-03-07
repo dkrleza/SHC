@@ -7,10 +7,10 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QAreaSeries>
 #include <QTimer>
-#include "SHC.hpp"
+#include "SHC/SHC.hpp"
 #include <QtCharts/QValueAxis>
 #include <Eigen/Dense>
-#include "GaussDataSource.hpp"
+#include "DataSources/GaussDataSource.hpp"
 #include <QtGlobal>
 #include <QList>
 #include <QTimer>

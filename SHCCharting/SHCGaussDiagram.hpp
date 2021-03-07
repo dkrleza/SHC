@@ -6,7 +6,7 @@
 #include <QtCharts/QScatterSeries>
 #include <Eigen/Dense>
 #include "ui_gaussTest.h"
-#include "SHC.hpp"
+#include "SHC/SHC.hpp"
 #include "SHCComponentTooltip.hpp"
 #include <memory>
 using namespace std;

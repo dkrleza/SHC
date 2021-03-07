@@ -37,6 +37,12 @@ struct _int_cr {
     SHC_Component *comp=NULL;
     double min_md=-1;
     vector<pair<SHC_Component*,double>> *neighborhood_map=NULL,*classified_map=NULL;
+    _int_cr(SHC_Component *comp,double min_md,vector<pair<SHC_Component*,double>> *nm,vector<pair<SHC_Component*,double>> *cm) {
+        this->comp=comp;
+        this->min_md=min_md;
+        this->neighborhood_map=nm;
+        this->classified_map=cm;
+    }
     ~_int_cr() {
         if(neighborhood_map!=NULL) delete neighborhood_map;
         if(classified_map!=NULL) delete classified_map;

@@ -4,7 +4,7 @@
 #include <QtWidgets/QWidget>
 #include "ui_diagram.h"
 #include "ui_gaussTest.h"
-#include "GaussDataSource.hpp"
+#include "DataSources/GaussDataSource.hpp"
 #include <chrono>
 
 class SHCDiagramWidget : public QWidget {

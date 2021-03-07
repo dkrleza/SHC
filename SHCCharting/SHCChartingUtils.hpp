@@ -8,7 +8,7 @@
 #include <QtCore/QTextStream>
 #include <iostream>
 #include <random>
-#include "SHCDataSource.hpp"
+#include "DataSources/SHCDataSource.hpp"
 using namespace Eigen;
 using namespace std;
 

@@ -1,5 +1,5 @@
 #include "SHCComponentTooltip.hpp"
-#include "SHC_Utils.hpp"
+#include "SHC/SHC_Utils.hpp"
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QStringListModel>

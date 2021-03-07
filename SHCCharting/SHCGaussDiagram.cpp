@@ -8,12 +8,12 @@
 #include <QtCore/QRandomGenerator>
 #include <cmath>
 #include <iostream>
-#include <SHC/SHC_Component>
-#include <SHC/SHC>
-#include "GaussDataSource.hpp"
+#include "SHC/SHC_Component.hpp"
+#include "SHC/SHC.hpp"
+#include "DataSources/GaussDataSource.hpp"
 #include "ui_gaussTest.h"
 #include "SHCComponentTooltip.hpp"
-#include "SigmaIndex.hpp"
+#include "SHC/SigmaIndex.hpp"
 using namespace Qt;
 QT_CHARTS_USE_NAMESPACE
 

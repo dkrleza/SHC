@@ -3,7 +3,7 @@
 #include <QtCore/QString>
 #include <QtCore/QDataStream>
 #include "ui_diagram.h"
-#include "SHC.hpp"
+#include "SHC/SHC.hpp"
 #include "SHCGaussDiagram.hpp"
 #include <iostream>
 #include <QtCore/QRandomGenerator>
@@ -11,7 +11,7 @@
 #include "SHCClusterDefWidget.hpp"
 #include "SHCLinMovingClusterDefWidget.hpp"
 #include "SHCCircMovingClusterDefWidget.hpp"
-#include "GaussDataSource.hpp"
+#include "DataSources/GaussDataSource.hpp"
 #include <memory>
 #include <string>
 using namespace std;

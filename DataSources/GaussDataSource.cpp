@@ -1,6 +1,6 @@
 #include "GaussDataSource.hpp"
 #include "SHCDataSource.hpp"
-#include <SHC/SHC_Component>
+#include "SHC/SHC_Component.hpp"
 #include <Eigen/Dense>
 #include <random>
 #include <cmath>

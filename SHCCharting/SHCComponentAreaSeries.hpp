@@ -3,7 +3,7 @@
 
 #include <QtCharts/QAreaSeries>
 #include <QtCharts/QLineSeries>
-#include "SHC_Component.hpp"
+#include "SHC/SHC_Component.hpp"
 QT_CHARTS_USE_NAMESPACE
 
 class SHCComponentAreaSeries : public QAreaSeries {

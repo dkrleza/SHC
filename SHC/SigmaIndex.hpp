@@ -7,10 +7,10 @@
 #include <unordered_map>
 #include <memory>
 #include <iostream>
-#include "SHC_Component"
+#include "SHC_Component.hpp"
 #include <Eigen/Sparse>
 #include <cmath>
-#include "SigmaIndexProxy"
+#include "SigmaIndexProxy.hpp"
 using namespace std;
 using namespace Eigen;
 

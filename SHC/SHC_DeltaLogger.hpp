@@ -6,8 +6,8 @@
 #include <string>
 #include <set>
 #include <unordered_map>
-#include "SHC_Component"
-#include "SHC_ComponentConnection"
+#include "SHC_Component.hpp"
+#include "SHC_ComponentConnection.hpp"
 using namespace Eigen;
 using namespace std;
 

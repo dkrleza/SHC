@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <string>
 #include "SHCDataSource.hpp"
-#include <SHC/SHC_Component>
+#include "SHC/SHC_Component.hpp"
 #include <memory>
 using namespace Eigen;
 using namespace std;
